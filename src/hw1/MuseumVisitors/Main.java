@@ -2,7 +2,10 @@ package hw1.MuseumVisitors;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.Scanner;
 
 public class Main {
 
@@ -10,17 +13,22 @@ public class Main {
     private static final int FIRST_ARRAY_ELEMENT = 0;
     private static final int SECOND_ARRAY_ELEMENT = 1;
     private static final String PATTERN_FOR_TIME = "kk:mm";
-    private static Map<Calendar, Calendar> timeMap = new TreeMap<>();
+    private static final ArrayList<Calendar> enterTimeArray = new ArrayList<>();
+    private static final ArrayList<Calendar> exitTimeArray = new ArrayList<>();
+    private static final ArrayList<Boolean> checkedTimeArray = new ArrayList<>();
 
     public static void main(String[] args) throws ParseException {
         Scanner scanner = new Scanner(System.in);
-        String inputTimes;
-        String[] time;
+        String inputInterval;
+        String[] splitTime;
         SimpleDateFormat timeFormat = new SimpleDateFormat(PATTERN_FOR_TIME);
-        boolean mark = false;
+        boolean firstVisitorMark = false;
         Calendar enterResult = new GregorianCalendar();
         Calendar exitResult = new GregorianCalendar();
+        int currVisitors;
+        int maxVisitors = 1;
 
+        // Input intervals and split them then put in ArrayLists
         while (scanner.hasNextLine()) {
             Calendar enterTime = new GregorianCalendar();
             Calendar exitTime = new GregorianCalendar();
@@ -28,36 +36,55 @@ public class Main {
             if (buffer.equals("")) {
                 break;
             }
-            inputTimes = buffer;
-            time = inputTimes.split(REGEX_RES_INTERVAL);
+            inputInterval = buffer;
+            splitTime = inputInterval.split(REGEX_RES_INTERVAL);
 
-            enterTime.setTime(timeFormat.parse(time[FIRST_ARRAY_ELEMENT]));
-            exitTime.setTime(timeFormat.parse(time[SECOND_ARRAY_ELEMENT]));
-            timeMap.put(enterTime, exitTime);
-        }
+            enterTime.setTime(timeFormat.parse(splitTime[FIRST_ARRAY_ELEMENT]));
+            exitTime.setTime(timeFormat.parse(splitTime[SECOND_ARRAY_ELEMENT]));
 
-        int maxVisitors = 1;
-        int currVisitors = 1;
-        Calendar enterBuffer = new GregorianCalendar();
-        Calendar exitBuffer = new GregorianCalendar();
-        for (Calendar enter : timeMap.keySet()) {
-            System.out.println(timeFormat.format(enter.getTime()) + "   " + timeFormat.format(timeMap.get(enter).getTime()));
-
-            if (!mark) {
-                enterResult = enter;
-                exitResult = timeMap.get(enter);
-                enterBuffer = enterResult;
-                exitBuffer = exitResult;
-                mark = true;
-            }
-
-            currVisitors++;
-            if (enter.before(exitBuffer) && timeMap.get(enter).before(exitBuffer)) {
-                currVisitors++;
+            if (enterTimeArray.contains(enterTime) && exitTimeArray.contains(exitTime)) {
+                checkedTimeArray.add(true);
             } else {
-                currVisitors--;
+                checkedTimeArray.add(false);
+            }
+
+            enterTimeArray.add(enterTime);
+            exitTimeArray.add(exitTime);
+
+            if (!firstVisitorMark) {
+                enterResult = enterTime;
+                exitResult = exitTime;
+                firstVisitorMark = true;
             }
         }
-        System.out.println(currVisitors);
+
+        // Searching max visitors for intervals
+        int index = 0;
+        for (Calendar enterKey1 : enterTimeArray) {
+            for (Calendar enterKey2 : enterTimeArray) {
+                currVisitors = 0;
+                for (Calendar enterKey3 : enterTimeArray) {
+                    if (enterKey1.after(exitTimeArray.get(enterTimeArray.indexOf(enterKey2))) || enterKey1.equals(exitTimeArray.get(enterTimeArray.indexOf(enterKey2)))) {
+                        break;
+                    }
+                    if (checkedTimeArray.get(index)) {
+                        break;
+                    }
+
+                    if ((enterKey3.before(enterKey1) && exitTimeArray.get(enterTimeArray.indexOf(enterKey3)).after(exitTimeArray.get(enterTimeArray.indexOf(enterKey2)))) || enterKey3.equals(enterKey1) && exitTimeArray.get(enterTimeArray.indexOf(enterKey3)).equals(exitTimeArray.get(enterTimeArray.indexOf(enterKey2))) || (enterKey3.before(enterKey1) && exitTimeArray.get(enterTimeArray.indexOf(enterKey3)).equals(exitTimeArray.get(enterTimeArray.indexOf(enterKey2)))) || (enterKey3.equals(enterKey1) && exitTimeArray.get(enterTimeArray.indexOf(enterKey3)).after(exitTimeArray.get(enterTimeArray.indexOf(enterKey2))))) {
+                        currVisitors++;
+                    }
+                    if (maxVisitors < currVisitors) {
+                        maxVisitors = currVisitors;
+                        enterResult = enterKey1;
+                        exitResult = exitTimeArray.get(enterTimeArray.indexOf(enterKey2));
+                    }
+                }
+            }
+            index++;
+        }
+
+        // Print answer the question
+        System.out.println(timeFormat.format(enterResult.getTime()) + " " + timeFormat.format(exitResult.getTime()));
     }
 }
